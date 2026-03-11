@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PixiJS Shockwave Effect Prototype</title>
+<style>
+  * {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #315a5b;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+.section-hero {
+  position: relative;
+  width: 100vw;
+  height: 100svh;
+  overflow: hidden;
+  cursor: default;
+
+  &.is-dragging {
+    cursor: grabbing;
+  }
+
+  .section-hero_background {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+
+    canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
+  }
+
+  .section-hero_content_wrapper {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+
+    .section-hero_slide-item {
+      pointer-events: auto;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s, visibility 0.3s;
+      padding: 6rem 30px;
+
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+
+      &.is-active {
+        opacity: 1;
+        visibility: visible;
+      }
+    }
+
+    .section-hero_title {
+      font-size: 52px;
+      font-weight: 400;
+      line-height: 48px;
+      letter-spacing: -0.52px;
+      color: #fff;
+      max-width: 640px;
+      margin-bottom: 3rem;
+
+      strong {
+        font-weight: 700;
+      }
+    }
+
+    .section-hero_description{
+        color: #fff;
+        font-size: 20px;
+        font-weight: 400;
+        line-height: 140%;
+        max-width: 25ch;
+    }
+
+    .section-hero_title_line_wrapper {
+      display: block;
+      overflow: hidden;
+    }
+
+    .section-hero_title_line {
+      display: block;
+      transform: translateY(110%);
+    }
+
+    .section-hero_controls {
+        position: absolute;
+        left: 30px;
+        bottom: 45px;
+        display: flex;
+        gap: 8px;
+
+        .section-hero_controls_dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: rgba(179, 179, 179, 0.3);
+          border: none;
+          cursor: pointer;
+          transition: background 0.3s, transform 0.3s;
+          padding: 0;
+          pointer-events: auto;
+
+          &.is-active {
+            background: #fff;
+            transform: scale(1.4);
+          }
+        }
+      }
+    }
+  }
+
+  .scroll-down {
+    position: absolute;
+    bottom: 35px;
+    right: 30px;
+    z-index: 3;
+    background: none;
+    border: none;
+    cursor: pointer;
+    pointer-events: auto;
+  }
+
+  .gradient-blur {
+      position: absolute;
+      z-index: 2;
+      inset: auto 0 0 0;
+      height: 45vh;
+      pointer-events: none;
+
+      & > div,
+      &::before,
+      &::after {
+        position: absolute;
+        inset: 0;
+      }
+
+      &::before {
+        content: "";
+        z-index: 1;
+        backdrop-filter: blur(0.5px);
+        mask: linear-gradient(
+          to bottom,
+          rgba(0, 0, 0, 0) 0%,
+          rgba(0, 0, 0, 1) 12.5%,
+          rgba(0, 0, 0, 1) 25%,
+          rgba(0, 0, 0, 0) 37.5%
+        );
+      }
+
+      & > div:nth-of-type(1) {
+        z-index: 2;
+        backdrop-filter: blur(1px);
+        mask: linear-gradient(
+          to bottom,
+          rgba(0, 0, 0, 0) 12.5%,
+          rgba(0, 0, 0, 1) 25%,
+          rgba(0, 0, 0, 1) 37.5%,
+          rgba(0, 0, 0, 0) 50%
+        );
+      }
+
+      & > div:nth-of-type(2) {
+        z-index: 3;
+        backdrop-filter: blur(2px);
+        mask: linear-gradient(
+          to bottom,
+          rgba(0, 0, 0, 0) 25%,
+          rgba(0, 0, 0, 1) 37.5%,
+          rgba(0, 0, 0, 1) 50%,
+          rgba(0, 0, 0, 0) 62.5%
+        );
+      }
+
+      & > div:nth-of-type(3) {
+        z-index: 4;
+        backdrop-filter: blur(4px);
+        mask: linear-gradient(
+          to bottom,
+          rgba(0, 0, 0, 0) 37.5%,
+          rgba(0, 0, 0, 1) 50%,
+          rgba(0, 0, 0, 1) 62.5%,
+          rgba(0, 0, 0, 0) 75%
+        );
+      }
+
+      & > div:nth-of-type(4) {
+        z-index: 5;
+        backdrop-filter: blur(8px);
+        mask: linear-gradient(
+          to bottom,
+          rgba(0, 0, 0, 0) 50%,
+          rgba(0, 0, 0, 1) 62.5%,
+          rgba(0, 0, 0, 1) 75%,
+          rgba(0, 0, 0, 0) 87.5%
+        );
+      }
+
+      & > div:nth-of-type(5) {
+        z-index: 6;
+        backdrop-filter: blur(16px);
+        mask: linear-gradient(
+          to bottom,
+          rgba(0, 0, 0, 0) 62.5%,
+          rgba(0, 0, 0, 1) 75%,
+          rgba(0, 0, 0, 1) 87.5%,
+          rgba(0, 0, 0, 0) 100%
+        );
+      }
+
+      & > div:nth-of-type(6) {
+        z-index: 7;
+        backdrop-filter: blur(32px);
+        mask: linear-gradient(
+          to bottom,
+          rgba(0, 0, 0, 0) 75%,
+          rgba(0, 0, 0, 1) 87.5%,
+          rgba(0, 0, 0, 1) 100%
+        );
+      }
+
+      &::after {
+        content: "";
+        z-index: 8;
+        backdrop-filter: blur(64px);
+        mask: linear-gradient(
+          to bottom,
+          rgba(0, 0, 0, 0) 87.5%,
+          rgba(0, 0, 0, 1) 100%
+        );
+      }
+    }
+
+  .no-webgl-message {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #78eaff;
+    font-size: 1rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .button{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 0.5rem 1rem 0.5rem 1.5rem;
+    border-radius: 100vw;
+    color: #101A27;
+    background-color: #fff;
+    text-decoration: none;
+  }
+
+.section-placeholder {
+  height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a1f2e;
+  color: #fff;
+  font-size: 2rem;
+  text-align: center;
+}
+</style>
+</head>
+<body>
+
+<section class="section-hero" id="hero"
+  data-images="hero-image-1.jpg,hero-image-2.jpg,hero-image-3.jpg">
+
+  <!-- PixiJS renders here -->
+  <div class="section-hero_background" id="pixi-bg">
+  </div>
+
+  <!-- Gradient blur effect -->
+    <div class="gradient-blur">
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+    </div>
+
+  <!-- Text -->
+  <div class="section-hero_content_wrapper">
+    <div class="section-hero_slide-item is-active">
+      <div>
+        <div class="section-hero_title">Make Hypo. Sleep Better.</div>
+        <a class="button" href="/">
+            <span>Learn About Electrochlorination</span>
+            <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="18" cy="18" r="18" fill="#FFC700"/>
+                <path d="M18.2971 14L22.5 18M22.5 18L18.2971 22M22.5 18L13 18" stroke="#101A27" stroke-width="1.1" stroke-linejoin="round"/>
+            </svg>
+        </a>
+      </div>
+      <p class="section-hero_description">Electrochlorination systems that provide peace of mind</p>
+    </div>
+    <div class="section-hero_slide-item">
+      <div>
+        <div class="section-hero_title">Creston Electrichlor™ Brine Systems</div>
+        <a class="button" href="/">
+            <span>Learn About Electrochlorination</span>
+            <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="18" cy="18" r="18" fill="#FFC700"/>
+                <path d="M18.2971 14L22.5 18M22.5 18L18.2971 22M22.5 18L13 18" stroke="#101A27" stroke-width="1.1" stroke-linejoin="round"/>
+            </svg>
+        </a>
+      </div>
+      <p class="section-hero_description">Electrochlorination systems that provide peace of mind</p>
+    </div>
+    <div class="section-hero_slide-item">
+      <div>
+        <div class="section-hero_title">Drinking Water</div>
+        <a class="button" href="/">
+            <span>Learn About Electrochlorination</span>
+            <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="18" cy="18" r="18" fill="#FFC700"/>
+                <path d="M18.2971 14L22.5 18M22.5 18L18.2971 22M22.5 18L13 18" stroke="#101A27" stroke-width="1.1" stroke-linejoin="round"/>
+            </svg>
+        </a>
+      </div>
+      <p class="section-hero_description">Electrochlorination systems that provide peace of mind</p>
+    </div>
+    
+    <div class="section-hero_controls" id="dots">
+      <button class="section-hero_controls_dot is-active" data-index="0"></button>
+      <button class="section-hero_controls_dot" data-index="1"></button>
+      <button class="section-hero_controls_dot" data-index="2"></button>
+    </div>
+  </div>
+
+  <a href="#nextSection" class="scroll-down">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="20" viewBox="0 0 18 20" fill="none">
+      <path d="M9.04686 1L9.04686 14.4096M17 13.2282L11.1735 19M1 13.2282L6.82654 19" stroke="white" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+  </a>
+</section>
+
+<section class="section-placeholder" id="nextSection">
+  <p>Placeholder Section</p>
+</section>
+
+<!-- Dependencies -->
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/SplitText.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/5.3.12/pixi.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pixi-filters@3.2.2/dist/pixi-filters.js"></script>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+//  EXACT WIREWERKS HERO — reverse-engineered from app.js
+//
+//  Core mechanic (from source):
+//  - Each slide has: PIXI.Sprite (photo) + PIXI.Graphics (circle mask) + ShockwaveFilter
+//  - On launch(): TweenMax animates slide.progress from 0 → 100 over 2s
+//  - raf() each frame:
+//      maskRadius = progress * maxRadius / 100        (circle expands from center)
+//      scale      = baseScale + (maxScale-1) * (1 - progress/100)  (zooms in → out)
+//      filter.time = progress * 1.2                   (shockwave ripple travels outward)
+// ─────────────────────────────────────────────────────────────────────────────
+
+(async function() {
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  function lerp(a, b, t) { return (1 - t) * a + t * b; }
+  function pad(n, w) { return new Array(w + 1 - (n + '').length).join('0') + n; }
+
+  // ── DOM refs ───────────────────────────────────────────────────────────────
+  const heroEl    = document.getElementById('hero');
+  const bgEl      = document.getElementById('pixi-bg');
+  const dotsEls   = document.querySelectorAll('.section-hero_controls_dot');
+  const slideItems = document.querySelectorAll('.section-hero_slide-item');
+
+  // ── Config (all tunable via control panel) ─────────────────────────────────
+  const CFG = {
+    amplitude:     45,
+    wavelength:    350,
+    speed:         10,
+    timeScale:     1.2,   // filter.time = progress * timeScale (controls wave distance)
+    tweenDuration: 2,
+    autoDelay:     7000,
+    maxScale:      1.35,
+  };
+  const BASE_W     = 1920;
+  const BASE_H     = 1080;
+  const BASE_RATIO = BASE_W / BASE_H;
+  const BG_COLOR   = 0x315a5b;
+
+  // ── State ──────────────────────────────────────────────────────────────────
+  let width, height, radius;
+  let index       = 1;
+  let nextIndex   = 0;
+  let isAvailable = true;
+  let firstBlood  = true;
+  let autoInterval;
+  let isPaning    = false;
+  let distance    = 0;
+  let velocity    = 0;
+
+  const line  = { start: { x: 0, y: 0 }, end: { x: 0, y: 0, lerpedX: 0, lerpedY: 0 } };
+  const mouse = { x: 0, y: 0, lerpedX: 0, lerpedY: 0 };
+
+  // ── Assets ─────────────────────────────────────────────────────────────────
+  const assets = heroEl.getAttribute('data-images').split(',');
+
+  // ── PIXI setup ─────────────────────────────────────────────────────────────
+  width  = bgEl.offsetWidth;
+  height = bgEl.offsetHeight;
+  radius = Math.max(width, height);
+
+  const app = new PIXI.Application({
+    width,
+    height,
+    autoResize: true,
+    backgroundColor: BG_COLOR,
+    antialias: !(window.devicePixelRatio > 1.5),
+    resolution: Math.min(window.devicePixelRatio || 1, 1.5)
+  });
+  bgEl.appendChild(app.view);
+
+  // ── Title animations with SplitText ────────────────────────────────────────
+  const titleTimelines = Array.from(slideItems).map(slideItem => {
+    const titleEl = slideItem.querySelector('.section-hero_title');
+    const split = new SplitText(titleEl, { type: 'lines', linesClass: 'section-hero_title_line' });
+    
+    // Wrap lines for overflow hidden
+    split.lines.forEach(line => {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'section-hero_title_line_wrapper';
+      line.parentNode.insertBefore(wrapper, line);
+      wrapper.appendChild(line);
+    });
+    
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo(split.lines, 
+      { y: '110%' },
+      { y: '0%', duration: 0.6, stagger: 0.06, ease: 'power2.inOut' }
+    );
+    return tl;
+  });
+
+  // ── Slide container ────────────────────────────────────────────────────────
+  const slideContainer = new PIXI.Container();
+  slideContainer.sortableChildren = true;
+
+  const lineGraphic   = new PIXI.Graphics();
+  const dotStart      = new PIXI.Graphics();
+  const dotEnd        = new PIXI.Graphics();
+  const lineContainer = new PIXI.Container();
+  lineContainer.alpha = 0;
+  lineContainer.addChild(lineGraphic);
+  lineContainer.addChild(dotStart);
+  lineContainer.addChild(dotEnd);
+
+  // ── Load assets ────────────────────────────────────────────────────────────
+  // PIXI.Loader.shared fails with redirect URLs (picsum.photos → CDN).
+  // PIXI.Texture.fromURL handles redirects + CORS correctly.
+  console.log('[loader] Loading', assets.length, 'textures via PIXI.Texture.fromURL...');
+  const textures = await Promise.all(
+    assets.map((url, i) =>
+      PIXI.Texture.fromURL(url, { crossOrigin: 'anonymous' })
+        .then(t => { console.log(`[loader] ✅ asset-${i} loaded: ${t.width}x${t.height}`); return t; })
+        .catch(e => { console.error(`[loader] ❌ asset-${i} FAILED:`, e); return PIXI.Texture.WHITE; })
+    )
+  );
+  console.log('[loader] All done. Textures:', textures.map((t,i) => `[${i}]: ${t.width}x${t.height}`));
+
+  // ── Build slides ───────────────────────────────────────────────────────────
+  const slides = assets.map((url, i) => {
+    const texture   = textures[i];
+    const sprite    = new PIXI.Sprite(texture);
+    const container = new PIXI.Container();
+    const maskGfx   = new PIXI.Graphics();
+
+    console.log(`[slide ${i}] texture: ${texture ? texture.width+'x'+texture.height : 'NULL'}, valid: ${texture?.valid}`);
+
+    sprite.anchor.set(0.5);
+    sprite.x = width  / 2;
+    sprite.y = height / 2;
+
+    // Filter: time=50 initially = wave already passed, zero distortion visible.
+    // NEVER disable — original source keeps it always on and just controls via time.
+    const shockwave = new PIXI.filters.ShockwaveFilter(
+      [width / 2, height / 2],
+      {
+        amplitude:  CFG.amplitude,
+        brightness: 1,
+        wavelength: CFG.wavelength,
+        speed:      CFG.speed,
+        radius
+      },
+      50
+    );
+
+    container.addChild(sprite);
+    // NOTE: maskGfx is NOT added to display list — original source never does this.
+    // WebGL stencil masks work without being in the scene graph.
+    // Adding it would render it as a visible white circle (bug).
+    container.filters = [shockwave];
+    container.alpha   = 0;
+    container.zIndex  = 1;
+    slideContainer.addChild(container);
+
+    const scaleVal = Math.max(width / BASE_W, 1);
+    sprite.scale.set(scaleVal);
+
+    return { container, sprite, mask: maskGfx, filter: shockwave, texture,
+             progress: 0, tl: titleTimelines[i], baseScale: scaleVal, baseWidth: BASE_W };
+  });
+
+  app.stage.addChild(slideContainer);
+  app.stage.addChild(lineContainer);
+
+  console.log('[stage] children:', app.stage.children.length, '| slideContainer children:', slideContainer.children.length);
+  console.log('[renderer] type:', app.renderer.type === PIXI.RENDERER_TYPE.WEBGL ? 'WebGL' : 'Canvas', '| size:', app.renderer.width, 'x', app.renderer.height);
+
+  // Pixel readback test — after 3s check if canvas has non-background pixels
+  setTimeout(() => {
+    try {
+      const pixels = app.renderer.plugins.extract.pixels(app.stage);
+      // Sample center pixel
+      const cx = Math.floor(width / 2), cy = Math.floor(height / 2);
+      const idx = (cy * width + cx) * 4;
+      const r = pixels[idx], g = pixels[idx+1], b = pixels[idx+2], a = pixels[idx+3];
+      // BG_COLOR = 0x314462 = rgb(49,68,98)
+      const isBgColor = (r === 49 && g === 68 && b === 98);
+      console.warn(`[pixel test] center pixel = rgba(${r},${g},${b},${a}) — ${isBgColor ? '❌ STILL BACKGROUND COLOR — image not rendering' : '✅ NON-BACKGROUND — image IS rendering'}`);
+      console.log('[slide states]', slides.map((s,i) => `[${i}] alpha=${s.container.alpha} progress=${s.progress.toFixed(1)} mask=${s.container.mask ? 'set' : 'null'} zIndex=${s.container.zIndex}`));
+    } catch(e) {
+      console.error('[pixel test] failed:', e.message);
+    }
+  }, 3000);
+
+  // ── Resize ──────────────────────────────────────────────────────────────────
+  function resize() {
+    width  = bgEl.offsetWidth;
+    height = bgEl.offsetHeight;
+    radius = Math.max(width, height);
+
+    slides.forEach(slide => {
+      const sp = slide.container.children[0];
+      sp.x = width  / 2;
+      sp.y = height / 2;
+
+      if (width / height < BASE_RATIO) {
+        const s = Math.max(height / BASE_H);
+        sp.scale.set(1, s);
+        slide.baseScale = s;
+      } else {
+        const s = Math.max(width / slide.baseWidth, 1);
+        sp.scale.set(s);
+        slide.baseScale = s;
+      }
+
+      slide.filter.center = [width / 2, height / 2];
+    });
+
+    if (app.renderer) app.renderer.resize(width, height);
+  }
+
+  window.addEventListener('resize', resize);
+
+
+  // ── RAF loop ────────────────────────────────────────────────────────────────
+  // filter.time = progress * timeScale  (original formula — wave coupled to mask)
+  // This is exactly how the Wirewerks source works.
+  app.ticker.add(() => {
+    for (let i = 0; i < slides.length; i++) {
+      const slide = slides[i];
+      const scl   = slide.baseScale - 1 + CFG.maxScale - slide.progress * (CFG.maxScale - 1) / 100;
+      const maskR = slide.progress * radius / 100;
+
+      slide.mask.clear();
+      slide.mask.beginFill(0xFFFFFF, 1);
+      slide.mask.drawCircle(width / 2, height / 2, maskR);
+      slide.mask.endFill();
+      slide.container.mask = slide.mask;
+
+      slide.container.children[0].scale.set(scl, scl);
+      slide.filter.time = slide.progress * CFG.timeScale;
+
+      if (isAvailable) {
+        if (i === nextIndex) {
+          slides[i].progress = lerp(slides[i].progress, Math.abs(distance / 4), 0.2);
+        } else if (i !== index) {
+          slides[i].progress = 0;
+        }
+      }
+    }
+
+    dotStart.clear();
+    dotEnd.clear();
+    lineGraphic.clear();
+    lineGraphic.lineStyle(2, 0x78EAFF, 1);
+    mouse.lerpedX     = lerp(mouse.lerpedX, mouse.x, 0.1);
+    mouse.lerpedY     = lerp(mouse.lerpedY, mouse.y, 0.1);
+    line.end.lerpedX  = lerp(line.end.lerpedX, line.end.x, 0.5);
+    line.end.lerpedY  = lerp(line.end.lerpedY, line.end.y, 0.5);
+
+    if (isPaning) {
+      lineGraphic.moveTo(line.start.x, line.start.y);
+      lineGraphic.quadraticCurveTo(mouse.lerpedX, mouse.lerpedY, line.end.lerpedX, line.end.lerpedY);
+    } else {
+      lineGraphic.moveTo(line.start.x, line.start.y);
+      lineGraphic.quadraticCurveTo(mouse.lerpedX, mouse.lerpedY, line.end.x, line.end.y);
+    }
+    dotStart.beginFill(0x78EAFF); dotStart.drawCircle(line.start.x, line.start.y, 3); dotStart.endFill();
+    dotEnd.beginFill(0x78EAFF);   dotEnd.drawCircle(line.end.lerpedX, line.end.lerpedY, 3); dotEnd.endFill();
+  });
+
+  // ── Launch ─────────────────────────────────────────────────────────────────
+  function launch() {
+    if (firstBlood) slides.forEach(s => { s.container.alpha = 1; });
+
+    isAvailable = false;
+    heroEl.classList.add('is-unavailable');
+
+    const prevIndex = index;
+    index     = nextIndex;
+    nextIndex = index + 1 < slides.length ? index + 1 : 0;
+
+    slides[prevIndex].container.zIndex = 1;
+    slides[index].container.zIndex     = 2;
+    slideContainer.sortChildren();
+
+    // Don't reset progress — if coming from a drag, continue FROM current value.
+    // Scale the tween duration by how much is left (drag already covered some distance).
+    const remaining = (100 - slides[index].progress) / 100;
+    const tweenDur  = CFG.tweenDuration * remaining;
+
+    gsap.to(slides[index], {
+      progress: 100,
+      duration: tweenDur,
+      ease: velocity > 2 ? 'power2.out' : 'power2.inOut'
+    });
+
+    if (slides[prevIndex].tl) slides[prevIndex].tl.reverse();
+    setTimeout(() => { if (slides[index].tl) slides[index].tl.play(); }, 750);
+
+    setTimeout(() => {
+      // Reset prev slide cleanly — NO filter.enabled, just reset progress
+      gsap.killTweensOf(slides[prevIndex]);
+      slides[prevIndex].progress = 0;
+      isAvailable = true;
+      heroEl.classList.remove('is-unavailable');
+      velocity = 0;
+    }, 1000);
+
+    dotsEls.forEach((d, i) => d.classList.toggle('is-active', i === index));
+    slideItems.forEach((item, i) => item.classList.toggle('is-active', i === index));
+    firstBlood = false;
+  }
+
+  // ── Dot clicks ──────────────────────────────────────────────────────────────
+  dotsEls.forEach(dot => {
+    dot.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const i = parseInt(dot.getAttribute('data-index'));
+      if (isAvailable && index !== i) {
+        clearInterval(autoInterval);
+        nextIndex = i;
+        launch();
+        autoInterval = setInterval(launch, CFG.autoDelay);
+      }
+    });
+    
+    // Prevent drag gestures from starting on dots
+    dot.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+    });
+  });
+  
+  // Prevent drag gestures from starting on scroll-down button
+  const scrollDownBtn = document.querySelector('.scroll-down');
+  if (scrollDownBtn) {
+    scrollDownBtn.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+    });
+    
+    // Smooth scroll to next section without updating URL
+    scrollDownBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const targetId = scrollDownBtn.getAttribute('href').substring(1);
+      const targetSection = document.getElementById(targetId);
+      if (targetSection) {
+        targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  }
+  
+  // Native Pointer Events for drag/swipe gestures
+  let pointerStart = { x: 0, y: 0, time: 0 };
+  let pointerCurrent = { x: 0, y: 0 };
+  let pointerId = null;
+
+  heroEl.addEventListener('pointerdown', e => {
+    if (pointerId !== null) return;
+    pointerId = e.pointerId;
+    heroEl.setPointerCapture(e.pointerId);
+
+    clearInterval(autoInterval);
+    isPaning = true;
+    if (slides[index].tl) slides[index].tl.reverse();
+    
+    pointerStart.x = pointerCurrent.x = e.clientX;
+    pointerStart.y = pointerCurrent.y = e.clientY;
+    pointerStart.time = Date.now();
+    
+    line.start.x = line.end.x = mouse.x = mouse.lerpedX = e.clientX;
+    line.start.y = line.end.y = mouse.y = mouse.lerpedY = e.clientY;
+    heroEl.classList.add('is-dragging');
+  });
+
+  heroEl.addEventListener('pointermove', e => {
+    if (e.pointerId !== pointerId) return;
+    
+    pointerCurrent.x = e.clientX;
+    pointerCurrent.y = e.clientY;
+    
+    line.end.x = e.clientX;
+    line.end.y = e.clientY;
+    
+    if (!isAvailable || !isPaning) return;
+
+    const deltaX = pointerCurrent.x - pointerStart.x;
+    distance = deltaX / (width / 2) * 100;
+
+    if (distance < 0) {
+      nextIndex = index < slides.length - 1 ? index + 1 : 0;
+    } else {
+      nextIndex = index > 0 ? index - 1 : slides.length - 1;
+    }
+
+    slides.forEach((s, i) => {
+      s.container.zIndex = i === nextIndex ? 2 : 1;
+    });
+    slideContainer.sortChildren();
+
+    gsap.to(lineContainer, { alpha: 1, duration: 0.6 });
+    
+    const deltaTime = Date.now() - pointerStart.time;
+    velocity = Math.abs(deltaX / Math.max(deltaTime, 1));
+  });
+
+  heroEl.addEventListener('pointerup', e => {
+    if (e.pointerId !== pointerId) return;
+    heroEl.releasePointerCapture(e.pointerId);
+    pointerId = null;
+
+    gsap.to(line.start, { x: line.end.x, y: line.end.y, duration: 0.4 });
+
+    if (isAvailable) {
+      if (Math.abs(distance) > 60) {
+        launch();
+      } else {
+        isAvailable = false;
+        heroEl.classList.add('is-unavailable');
+        if (slides[index].tl) slides[index].tl.play();
+        gsap.to(slides[nextIndex], {
+          progress: 0,
+          duration: 0.6,
+          onComplete: () => {
+            isAvailable = true;
+            heroEl.classList.remove('is-unavailable');
+            velocity = 0;
+          }
+        });
+      }
+      autoInterval = setInterval(launch, CFG.autoDelay);
+      distance = 0;
+    } else {
+      if (slides[index].tl) slides[index].tl.play();
+    }
+
+    isPaning = false;
+    gsap.to(lineContainer, { alpha: 0, duration: 0.6 });
+    heroEl.classList.remove('is-dragging');
+  });
+
+  heroEl.addEventListener('pointercancel', e => {
+    if (e.pointerId !== pointerId) return;
+    pointerId = null;
+    isPaning = false;
+    gsap.to(lineContainer, { alpha: 0, duration: 0.6 });
+    heroEl.classList.remove('is-dragging');
+  });
+
+  window.addEventListener('mousemove', e => {
+    if (isPaning) {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+    }
+  });
+
+  // ── Start ───────────────────────────────────────────────────────────────────
+  setTimeout(() => {
+    // Set all slides visible BEFORE launch so wave is rendered from frame 1
+    slides.forEach(s => { s.container.alpha = 1; });
+    launch();
+    heroEl.classList.add('is-ready');
+    resize();
+  }, 600);
+
+  autoInterval = setInterval(launch, CFG.autoDelay);
+
+  // Expose to control panel
+  function resetAutoInterval() {
+    clearInterval(autoInterval);
+    autoInterval = setInterval(launch, CFG.autoDelay);
+  }
+  window.__heroCtrl = { CFG, slides, resetAutoInterval };
+
+})();
+</script>
+
+<!-- ── CONTROL PANEL ─────────────────────────────────────────────────────── -->
+<style>
+#ctrl-panel {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 9999;
+  background: rgba(10,14,22,0.92);
+  border: 1px solid rgba(120,234,255,0.18);
+  border-radius: 12px;
+  padding: 0;
+  width: 300px;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: #78EAFF;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  backdrop-filter: blur(12px);
+  user-select: none;
+}
+#ctrl-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(120,234,255,0.12);
+  letter-spacing: 0.1em;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+#ctrl-header span { opacity: 0.5; font-size: 14px; line-height:1; }
+#ctrl-body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 10px; }
+#ctrl-body.hidden { display: none; }
+.ctrl-group { display: flex; flex-direction: column; gap: 4px; }
+.ctrl-group-label {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(120,234,255,0.4);
+  padding-bottom: 2px;
+  border-bottom: 1px solid rgba(120,234,255,0.08);
+  margin-bottom: 2px;
+}
+.ctrl-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 42px;
+  align-items: center;
+  gap: 8px;
+}
+.ctrl-row label { color: rgba(120,234,255,0.75); white-space: nowrap; }
+.ctrl-row input[type=range] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 3px;
+  background: rgba(120,234,255,0.15);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+.ctrl-row input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #78EAFF;
+  cursor: pointer;
+  box-shadow: 0 0 6px rgba(120,234,255,0.6);
+}
+.ctrl-row .val {
+  text-align: right;
+  color: #fff;
+  font-size: 11px;
+  min-width: 38px;
+}
+#ctrl-reset {
+  margin-top: 4px;
+  padding: 6px;
+  background: rgba(120,234,255,0.08);
+  border: 1px solid rgba(120,234,255,0.2);
+  border-radius: 6px;
+  color: #78EAFF;
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.2s;
+}
+#ctrl-reset:hover { background: rgba(120,234,255,0.18); }
+#ctrl-export {
+  margin-top: 4px;
+  padding: 6px;
+  background: rgba(120,234,255,0.04);
+  border: 1px solid rgba(120,234,255,0.12);
+  border-radius: 6px;
+  color: rgba(120,234,255,0.6);
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.2s;
+}
+#ctrl-export:hover { background: rgba(120,234,255,0.1); color: #78EAFF; }
+</style>
+
+<div id="ctrl-panel">
+  <div id="ctrl-header">
+    ⚙ Shockwave Controls
+    <span id="ctrl-toggle">▾</span>
+  </div>
+  <div id="ctrl-body">
+
+    <div class="ctrl-group">
+      <div class="ctrl-group-label">Shockwave Filter</div>
+
+      <div class="ctrl-row">
+        <label>Amplitude</label>
+        <input type="range" id="s-amplitude" min="0" max="120" step="1" value="45">
+        <span class="val" id="v-amplitude">45</span>
+      </div>
+      <div class="ctrl-row">
+        <label>Wavelength</label>
+        <input type="range" id="s-wavelength" min="20" max="1200" step="10" value="350">
+        <span class="val" id="v-wavelength">350</span>
+      </div>
+      <div class="ctrl-row">
+        <label>Speed</label>
+        <input type="range" id="s-speed" min="1" max="100" step="1" value="10">
+        <span class="val" id="v-speed">10</span>
+      </div>
+      <div class="ctrl-row">
+        <label>Time Scale</label>
+        <input type="range" id="s-timeScale" min="0.1" max="5" step="0.05" value="1.2">
+        <span class="val" id="v-timeScale">1.20</span>
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <div class="ctrl-group-label">Transition</div>
+
+      <div class="ctrl-row">
+        <label>Tween Duration</label>
+        <input type="range" id="s-tweenDuration" min="0.3" max="8" step="0.1" value="2">
+        <span class="val" id="v-tweenDuration">2.0s</span>
+      </div>
+      <div class="ctrl-row">
+        <label>Auto Interval</label>
+        <input type="range" id="s-autoDelay" min="1000" max="20000" step="500" value="7000">
+        <span class="val" id="v-autoDelay">7.0s</span>
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <div class="ctrl-group-label">Zoom</div>
+      <div class="ctrl-row">
+        <label>Max Scale</label>
+        <input type="range" id="s-maxScale" min="1.0" max="2.5" step="0.01" value="1.35">
+        <span class="val" id="v-maxScale">1.35</span>
+      </div>
+    </div>
+
+    <button id="ctrl-reset">Reset to Default</button>
+    <button id="ctrl-export">Copy Settings</button>
+  </div>
+</div>
+
+<script>
+(function() {
+  const STORAGE_KEY = 'pixijs_shockwave_cfg';
+
+  const DEFAULTS = {
+    amplitude: 45, wavelength: 350, speed: 10, timeScale: 1.2,
+    tweenDuration: 2, autoDelay: 7000, maxScale: 1.35
+  };
+
+  const FMT = {
+    amplitude:     v => Math.round(v),
+    wavelength:    v => Math.round(v),
+    speed:         v => Math.round(v),
+    timeScale:     v => parseFloat(v).toFixed(2),
+    tweenDuration: v => parseFloat(v).toFixed(1) + 's',
+    autoDelay:     v => (v/1000).toFixed(1) + 's',
+    maxScale:      v => parseFloat(v).toFixed(2),
+  };
+
+  // Toggle panel collapse
+  document.getElementById('ctrl-header').addEventListener('click', () => {
+    const body = document.getElementById('ctrl-body');
+    const tog  = document.getElementById('ctrl-toggle');
+    body.classList.toggle('hidden');
+    tog.textContent = body.classList.contains('hidden') ? '▸' : '▾';
+  });
+
+  function waitForCFG(cb) {
+    if (window.__heroCtrl) cb(window.__heroCtrl);
+    else setTimeout(() => waitForCFG(cb), 100);
+  }
+
+  waitForCFG(({ CFG, slides, resetAutoInterval }) => {
+    const keys = Object.keys(DEFAULTS);
+
+    // ── Load saved settings ────────────────────────────────────────────────
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if (saved) {
+        keys.forEach(key => {
+          if (saved[key] !== undefined) {
+            CFG[key] = saved[key];
+            const slider = document.getElementById('s-' + key);
+            const valEl  = document.getElementById('v-' + key);
+            if (slider) { slider.value = saved[key]; valEl.textContent = FMT[key](saved[key]); }
+          }
+        });
+        slides.forEach(s => {
+          s.filter.amplitude  = CFG.amplitude;
+          s.filter.wavelength = CFG.wavelength;
+          s.filter.speed      = CFG.speed;
+        });
+        console.log('[ctrl] ✅ Loaded saved settings:', CFG);
+      }
+    } catch(e) {}
+
+    function save() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(CFG)); } catch(e) {}
+    }
+
+    // ── Wire sliders ───────────────────────────────────────────────────────
+    keys.forEach(key => {
+      const slider = document.getElementById('s-' + key);
+      const valEl  = document.getElementById('v-' + key);
+      if (!slider) return;
+
+      slider.addEventListener('input', () => {
+        const v = parseFloat(slider.value);
+        CFG[key] = v;
+        valEl.textContent = FMT[key](v);
+
+        // Live-apply filter params
+        slides.forEach(s => {
+          if (key === 'amplitude')  s.filter.amplitude  = v;
+          if (key === 'wavelength') s.filter.wavelength = v;
+          if (key === 'speed')      s.filter.speed      = v;
+        });
+
+        if (key === 'autoDelay') resetAutoInterval();
+
+        save();
+      });
+    });
+
+    // ── Reset button ───────────────────────────────────────────────────────
+    document.getElementById('ctrl-reset').addEventListener('click', () => {
+      keys.forEach(key => {
+        CFG[key] = DEFAULTS[key];
+        const slider = document.getElementById('s-' + key);
+        const valEl  = document.getElementById('v-' + key);
+        if (slider) { slider.value = DEFAULTS[key]; valEl.textContent = FMT[key](DEFAULTS[key]); }
+      });
+      slides.forEach(s => {
+        s.filter.amplitude  = DEFAULTS.amplitude;
+        s.filter.wavelength = DEFAULTS.wavelength;
+        s.filter.speed      = DEFAULTS.speed;
+      });
+      resetAutoInterval();
+      localStorage.removeItem(STORAGE_KEY);
+      console.log('[ctrl] Reset to defaults');
+    });
+
+    // ── Export button ──────────────────────────────────────────────────────
+    document.getElementById('ctrl-export').addEventListener('click', () => {
+      const out = JSON.stringify(CFG, null, 2);
+      navigator.clipboard.writeText(out).then(() => {
+        const btn = document.getElementById('ctrl-export');
+        btn.textContent = 'Copied to Clipboard!';
+        setTimeout(() => { btn.textContent = 'Copy Settings'; }, 2000);
+      });
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
